@@ -73,7 +73,7 @@ export const googleLogin = (response) => {
 export const getProfile = () => api.get('/auth/profile');
 
 // Product endpoints
-export const getProducts = () => api.get('/products'); // Fix the product fetching endpoint
+export const getProducts = (params) => api.get('/products', { params });
 export const getProduct = (id) => api.get(`/products/${id}`);
 export const createProduct = (data) => {
   const formData = new FormData();
@@ -118,5 +118,17 @@ export const addToWishlist = (productId) =>
   api.post('/wishlist', { productId });
 export const removeFromWishlist = (productId) => 
   api.delete(`/wishlist/${productId}`);
+
+// Order endpoints
+export const createOrder = (orderData) => api.post('/orders', orderData);
+export const getUserOrders = () => api.get('/orders/my-orders');
+export const getOrderById = (id) => api.get(`/orders/${id}`);
+export const cancelOrder = (id) => api.patch(`/orders/${id}/cancel`);
+
+// Review endpoints
+export const getProductReviews = (productId) => api.get(`/reviews/product/${productId}`);
+export const createReview = (reviewData) => api.post('/reviews', reviewData);
+export const updateReview = (id, reviewData) => api.put(`/reviews/${id}`, reviewData);
+export const deleteReview = (id) => api.delete(`/reviews/${id}`);
 
 export default api;

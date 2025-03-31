@@ -46,19 +46,8 @@ const Cart = () => {
     }
   };
 
-  const handleCheckout = async () => {
-    setLoading(true);
-    try {
-      // Simulate checkout process
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      await clearCart();
-      toast.success('Checkout successful!');
-      navigate('/');
-    } catch (error) {
-      toast.error('Checkout failed');
-    } finally {
-      setLoading(false);
-    }
+  const handleCheckout = () => {
+    navigate('/checkout');
   };
 
   // Show loading state while cart is empty but user is authenticated

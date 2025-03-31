@@ -18,6 +18,8 @@ import PostAd from './pages/PostAd';
 import Profile from './pages/Profile';
 import Chat from './pages/Chat';
 import Cart from './pages/Cart';
+import Checkout from './pages/Checkout';
+import OrderSuccess from './pages/OrderSuccess';
 import Wishlist from './pages/Wishlist';
 import AuthCallback from './pages/AuthCallback';
 import GoogleCallback from './pages/GoogleCallback';
@@ -69,6 +71,8 @@ function App() {
                       <Route path="/profile" element={<Profile />} />
                       <Route path="/chat" element={<Chat />} />
                       <Route path="/cart" element={<Cart />} />
+                      <Route path="/checkout" element={<Checkout />} />
+                      <Route path="/order-success/:orderId" element={<OrderSuccess />} />
                       <Route path="/wishlist" element={<Wishlist />} />
                     </Routes>
                   </main>
