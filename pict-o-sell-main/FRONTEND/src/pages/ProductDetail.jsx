@@ -23,14 +23,25 @@ function ProductDetail() {
   const [quantity, setQuantity] = useState(1);
 
   // Check if product is already in cart and get current quantity
-  const productInCart = cartItems?.find(item => 
-    item.product?.id === (product?.id || id) || 
-    (typeof item.product === 'number' && item.product === (product?.id || parseInt(id)))
-  );
+  const productInCart = cartItems?.find(item => {
+    // Handle different possible structures of cart items
+    if (item.product && item.product.id) {
+      return item.product.id === (product?.id || id);
+    } else if (item.productId) {
+      return item.productId === (product?.id || id);
+    } else if (item.id) {
+      return item.id === (product?.id || id);
+    }
+    return false;
+  });
+  
   const currentCartQuantity = productInCart ? productInCart.quantity : 0;
   
   // Calculate remaining stock after considering what's already in cart
   const remainingStock = product ? (product.stock || 0) - currentCartQuantity : 0;
+
+  // Keep track of the last successful cart operation
+  const [lastAddedQuantity, setLastAddedQuantity] = useState(0);
 
   // Fetch product data if not available in location state
   useEffect(() => {
@@ -72,10 +83,13 @@ function ProductDetail() {
 
   // Increase quantity
   const increaseQuantity = () => {
-    if (quantity < remainingStock) {
+    // Calculate actual available stock considering what's in cart and what we just added
+    const actualAvailableStock = product.stock - currentCartQuantity;
+    
+    if (quantity < actualAvailableStock) {
       setQuantity(prev => prev + 1);
     } else {
-      toast.error(`Sorry, only ${remainingStock} more units available`);
+      toast.error(`Sorry, only ${actualAvailableStock} more units available`);
     }
   };
 
@@ -83,6 +97,30 @@ function ProductDetail() {
   const decreaseQuantity = () => {
     if (quantity > 1) {
       setQuantity(prev => prev - 1);
+    }
+  };
+
+  // Handle direct quantity input
+  const handleQuantityChange = (e) => {
+    const value = parseInt(e.target.value);
+    if (!isNaN(value)) {
+      // Calculate actual available stock considering what's in cart
+      const actualAvailableStock = product.stock - currentCartQuantity;
+      
+      // Ensure quantity is within valid range (1 to actualAvailableStock)
+      const newQuantity = Math.max(1, Math.min(value, actualAvailableStock));
+      setQuantity(newQuantity);
+    }
+  };
+
+  // Handle keyboard shortcuts for quantity
+  const handleQuantityKeyDown = (e) => {
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      increaseQuantity();
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      decreaseQuantity();
     }
   };
 
@@ -210,21 +248,33 @@ function ProductDetail() {
                     <button 
                       onClick={decreaseQuantity}
                       disabled={quantity <= 1}
-                      className="px-3 py-2 bg-indigo-50 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-3 py-2 bg-indigo-50 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                      aria-label="Decrease quantity"
                     >
                       <FaMinus />
                     </button>
-                    <span className="px-4 py-2 font-medium text-gray-800 dark:text-gray-200">
-                      {quantity}
-                    </span>
+                    <input
+                      type="number"
+                      min="1"
+                      max={product.stock - currentCartQuantity}
+                      value={quantity}
+                      onChange={handleQuantityChange}
+                      onKeyDown={handleQuantityKeyDown}
+                      className="w-16 px-2 py-2 text-center font-medium text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-800 border-0 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      aria-label="Quantity"
+                    />
                     <button 
                       onClick={increaseQuantity}
-                      disabled={quantity >= remainingStock}
-                      className="px-3 py-2 bg-indigo-50 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={quantity >= (product.stock - currentCartQuantity)}
+                      className="px-3 py-2 bg-indigo-50 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                      aria-label="Increase quantity"
                     >
                       <FaPlus />
                     </button>
                   </div>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                    {product.stock - currentCartQuantity} available
+                  </span>
                 </div>
               )}
 
@@ -262,13 +312,16 @@ function ProductDetail() {
                       // If product is already in cart, update the quantity instead of adding a new item
                       if (productInCart) {
                         await updateCartItem(productInCart.id, currentCartQuantity + quantity);
+                        toast.success(`Added ${quantity} more item${quantity > 1 ? 's' : ''} to cart! (Total: ${currentCartQuantity + quantity})`);
                       } else {
                         await addToCart(product, quantity);
+                        toast.success(`Added ${quantity} item${quantity > 1 ? 's' : ''} to cart!`);
                       }
                       
-                      toast.success(`Added ${quantity} item${quantity > 1 ? 's' : ''} to cart!`);
+                      // Store the last added quantity for reference
+                      setLastAddedQuantity(quantity);
                       
-                      // Reset quantity after successful add
+                      // Reset quantity to 1 after adding to cart to avoid confusion
                       setQuantity(1);
                       
                       // Don't navigate away, allow the user to continue shopping
