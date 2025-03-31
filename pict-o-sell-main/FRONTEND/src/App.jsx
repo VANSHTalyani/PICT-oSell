@@ -33,20 +33,27 @@ function App() {
             <WishlistProvider>
               <Router>
                 <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
-                  <Toaster position="top-center" toastOptions={{
-                    className: '',
-                    style: {
-                      background: '#fff',
-                      color: '#333',
-                    },
-                    // Dark mode toast styles
-                    dark: {
+                  <Toaster 
+                    position="top-center" 
+                    toastOptions={{
+                      className: '',
                       style: {
-                        background: '#1e293b',
-                        color: '#f8fafc',
+                        background: '#fff',
+                        color: '#333',
                       },
-                    },
-                  }} />
+                      // Dark mode toast styles
+                      dark: {
+                        style: {
+                          background: '#1e293b',
+                          color: '#f8fafc',
+                        },
+                      },
+                      // Prevent duplicate toasts
+                      id: (t) => t.message,
+                      // Increase duration to prevent overlapping toasts
+                      duration: 3000,
+                    }} 
+                  />
                 
                   <main className="flex-1">
                     <Navbar />

@@ -85,7 +85,18 @@ function Home() {
 
     try {
       // Check if product is already in cart
-      const productInCart = cartItems.find(item => item.product.id === product.id);
+      const productInCart = cartItems.find(item => {
+        // Handle different possible structures of cart items
+        if (item.product && item.product.id) {
+          return item.product.id === product.id;
+        } else if (item.productId) {
+          return item.productId === product.id;
+        } else if (item.id) {
+          return item.id === product.id;
+        }
+        return false;
+      });
+      
       const currentCartQuantity = productInCart ? productInCart.quantity : 0;
       
       // Check if there's still stock available
@@ -94,11 +105,13 @@ function Home() {
         return;
       }
       
-      // Add 1 unit to cart (quick add from home page)
+      // Add multiple units to cart
       if (productInCart) {
+        // Add 1 unit at a time when clicking the button repeatedly
         await updateCartQuantity(productInCart.id, currentCartQuantity + 1);
         toast.success(`Added 1 more item to cart! (Total: ${currentCartQuantity + 1})`);
       } else {
+        // First time adding to cart
         await addToCartContext(product);
         toast.success('Added to cart!');
       }
@@ -315,11 +328,15 @@ function Home() {
                         addToWishlistContext(product);
                       }
                     }}
-                    className={`p-2 ${isInWishlist(product.id) ? 'bg-pink-700' : 'bg-pink-600'} text-white rounded-lg shadow-md hover:bg-pink-700 transition-colors dark:bg-pink-700 dark:hover:bg-pink-800`}
+                    className={`p-2 ${
+                      isInWishlist(product.id) 
+                        ? 'bg-white text-pink-600 border border-pink-600' 
+                        : 'bg-pink-600 text-white'
+                    } rounded-lg shadow-md hover:bg-pink-100 hover:text-pink-700 transition-colors dark:hover:bg-pink-900`}
                     title={isInWishlist(product.id) ? 'Remove from Wishlist' : 'Add to Wishlist'}
                     aria-label={isInWishlist(product.id) ? 'Remove from Wishlist' : 'Add to Wishlist'}
                   >
-                    <FiHeart className="w-4 h-4" />
+                    <FiHeart className={`w-4 h-4 ${isInWishlist(product.id) ? 'fill-pink-600' : ''}`} />
                   </button>
                 </div>
 

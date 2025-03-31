@@ -120,13 +120,13 @@ function PostAd() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-white dark:from-gray-900 dark:to-gray-800 py-12 transition-colors duration-300">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-white dark:from-gray-900 dark:to-gray-800 py-12 transition-colors duration-300">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-white dark:bg-gray-800 shadow-2xl rounded-3xl overflow-hidden border border-gray-100 dark:border-gray-700 transition-colors duration-300">
+        <div className="bg-white dark:bg-gray-800 shadow-2xl rounded-3xl overflow-hidden border border-indigo-100 dark:border-gray-700 transition-colors duration-300">
           <div className="p-8 md:p-12">
             <div className="flex items-center mb-10">
-              <FiPlusCircle className="text-4xl text-purple-600 dark:text-purple-400 mr-4" />
-              <h1 className="text-4xl font-bold text-gray-900 dark:text-white bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Post a New Ad</h1>
+              <FiPlusCircle className="text-4xl text-indigo-600 dark:text-indigo-400 mr-4" />
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">Post a New Ad</h1>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-8">
@@ -142,9 +142,9 @@ function PostAd() {
                     onChange={(e) => setTitle(e.target.value)}
                     className="
                       block w-full px-4 py-3 
-                      border border-gray-300 dark:border-gray-600 rounded-lg 
+                      border-2 border-indigo-100 dark:border-gray-600 rounded-lg 
                       bg-white dark:bg-gray-700 text-gray-900 dark:text-white
-                      focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400
+                      focus:outline-none focus:ring-4 focus:ring-indigo-100 dark:focus:ring-indigo-900/30
                       transition-colors duration-300
                     "
                     required
@@ -162,9 +162,9 @@ function PostAd() {
                     onChange={(e) => setPrice(e.target.value)}
                     className="
                       block w-full px-4 py-3 
-                      border border-gray-300 dark:border-gray-600 rounded-lg 
+                      border-2 border-indigo-100 dark:border-gray-600 rounded-lg 
                       bg-white dark:bg-gray-700 text-gray-900 dark:text-white
-                      focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400
+                      focus:outline-none focus:ring-4 focus:ring-indigo-100 dark:focus:ring-indigo-900/30
                       transition-colors duration-300
                     "
                     required
@@ -182,18 +182,22 @@ function PostAd() {
                   onChange={(e) => setCategory(e.target.value)}
                   className="
                     block w-full px-4 py-3 
-                    border border-gray-300 rounded-lg 
-                    focus:outline-none focus:ring-2 focus:ring-purple-500
+                    border-2 border-indigo-100 dark:border-gray-600 rounded-lg 
+                    bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                    focus:outline-none focus:ring-4 focus:ring-indigo-100 dark:focus:ring-indigo-900/30
+                    transition-colors duration-300
                   "
                   required
                 >
                   <option value="">Select a category</option>
-                  <option value="books">Books</option>
-                  <option value="electronics">Electronics</option>
-                  <option value="hostel">Hostel Items</option>
-                  <option value="sports">Sports</option>
-                  <option value="music">Music</option>
-                  <option value="others">Others</option>
+                  <option value="Electronics">Electronics</option>
+                  <option value="Academics">Academics</option>
+                  <option value="Hostel & Lifestyle">Hostel & Lifestyle</option>
+                  <option value="Fashion">Fashion</option>
+                  <option value="Gaming">Gaming</option>
+                  <option value="Project & DIY">Project & DIY</option>
+                  <option value="Bicycles & Vehicles">Bicycles & Vehicles</option>
+                  <option value="Miscellaneous">Miscellaneous</option>
                 </select>
               </div>
 
@@ -208,24 +212,27 @@ function PostAd() {
                   rows={4}
                   className="
                     block w-full px-4 py-3 
-                    border border-gray-300 rounded-lg 
-                    focus:outline-none focus:ring-2 focus:ring-purple-500
+                    border-2 border-indigo-100 dark:border-gray-600 rounded-lg 
+                    bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                    focus:outline-none focus:ring-4 focus:ring-indigo-100 dark:focus:ring-indigo-900/30
+                    transition-colors duration-300
                   "
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                   Upload Image
                 </label>
-                {/* Changed to a button approach with the upload area being fully clickable */}
+                {/* Enhanced upload area with better styling */}
                 <div 
                   onClick={triggerFileInput}
                   className="
                     mt-2 flex justify-center px-6 py-8 
-                    border-2 border-dashed border-gray-300 
-                    rounded-lg hover:border-purple-500 
+                    border-2 border-dashed border-indigo-200 dark:border-indigo-800
+                    rounded-lg hover:border-indigo-500 dark:hover:border-indigo-600
+                    bg-indigo-50/50 dark:bg-indigo-900/20
                     transition-all duration-300
                     cursor-pointer
                   "
@@ -236,7 +243,7 @@ function PostAd() {
                         <img 
                           src={imagePreview} 
                           alt="Preview" 
-                          className="mx-auto h-48 w-auto object-cover rounded-lg"
+                          className="mx-auto h-48 w-auto object-cover rounded-lg shadow-md"
                         />
                         <button
                           type="button"
@@ -245,26 +252,29 @@ function PostAd() {
                             handleRemoveImage();
                           }}
                           className="
-                            absolute top-0 right-0 
+                            absolute top-2 right-2 
                             bg-red-500 text-white 
-                            rounded-full p-1 
+                            rounded-full p-1.5
                             hover:bg-red-600 
                             transition-colors
+                            shadow-md
                           "
                         >
                           <FiX />
                         </button>
                       </div>
                     ) : (
-                      <FiUpload className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-300 mb-4" />
+                      <FiUpload className="mx-auto h-12 w-12 text-indigo-400 dark:text-indigo-300 mb-4" />
                     )}
                     
                     <div className="flex text-sm text-gray-600 justify-center">
                       <span className="
                         relative
-                        bg-white rounded-md font-medium 
-                        text-purple-600 hover:text-purple-500 
-                        px-3 py-2
+                        bg-gradient-to-r from-indigo-600 to-violet-600 
+                        text-white font-medium 
+                        px-4 py-2 rounded-full
+                        hover:from-indigo-700 hover:to-violet-700
+                        transition-all duration-300 shadow-md
                       ">
                         {imagePreview ? 'Change Image' : 'Upload an image'}
                       </span>
@@ -280,7 +290,7 @@ function PostAd() {
                         accept="image/png, image/jpeg"
                       />
                     </div>
-                    <p className="text-xs text-gray-500 mt-2">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                       PNG, JPG up to 5MB
                     </p>
                   </div>
@@ -292,11 +302,13 @@ function PostAd() {
                   type="submit"
                   className="
                     w-full py-3 px-4 
-                    bg-purple-600 text-white 
-                    rounded-lg hover:bg-purple-700 
-                    transition-colors duration-300 
+                    bg-gradient-to-r from-indigo-600 to-violet-600 
+                    text-white 
+                    rounded-lg hover:from-indigo-700 hover:to-violet-700
+                    transition-all duration-300 
                     flex items-center justify-center 
                     space-x-2 font-semibold
+                    shadow-md hover:shadow-lg transform hover:scale-[1.02]
                   "
                 >
                   {loading ? (
@@ -309,7 +321,7 @@ function PostAd() {
                     </>
                   ) : (
                     <>
-                      <FiPlusCircle />
+                      <FiPlusCircle className="w-5 h-5" />
                       <span>Post Ad</span>
                     </>
                   )}

@@ -3,6 +3,10 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
+// Create a flag to track if the toast has been shown
+// Using a module-level variable instead of state to ensure it persists across renders
+let loginToastShown = false;
+
 function GoogleCallback() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -44,12 +48,16 @@ function GoogleCallback() {
             navigate('/');
           }
           
-          toast.success('Successfully logged in with Google!');
+          // Show only one toast notification
+          if (!loginToastShown) {
+            toast.success('Successfully logged in with Google!');
+            loginToastShown = true;
+          }
         } catch (profileError) {
           console.error('Error fetching user profile:', profileError);
           // Even if profile fetch fails, we still have the token, so redirect to home
           navigate('/');
-          toast.success('Logged in with Google!');
+          // Don't show a success toast here
         }
       } catch (error) {
         console.error('Google callback error:', error);

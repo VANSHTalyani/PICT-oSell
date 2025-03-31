@@ -169,14 +169,7 @@ function Navbar() {
           </div>
         ) : (
           <>
-            <Link 
-              to="/sell-item" 
-              className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 
-              text-white rounded-full hover:from-violet-700 hover:to-indigo-700 
-              transition-all duration-500 shadow-lg hover:shadow-xl"
-            >
-              Sell an Item
-            </Link>
+            {/* Removing "Sell an Item" link from navbar since it's already on the home page */}
             
             {/* User Dropdown with Elegant Styling */}
             <div className="relative">
@@ -284,15 +277,7 @@ function Navbar() {
               </div>
             ) : (
               <div className="space-y-4">
-                <Link 
-                  to="/sell-item" 
-                  className="block w-full text-center px-5 py-3.5 bg-gradient-to-r 
-                  from-indigo-600 to-violet-600 text-white rounded-full 
-                  hover:from-violet-700 hover:to-indigo-700 transition-all 
-                  duration-500 shadow-lg"
-                >
-                  Sell an Item
-                </Link>
+                {/* Removing "Sell an Item" link from mobile menu since it's already on the home page */}
                 <div className="border-t border-indigo-100 pt-4">
                   <Link 
                     to="/profile" 

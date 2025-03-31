@@ -61,7 +61,7 @@ export const CartProvider = ({ children }) => {
   const updateCartItem = async (itemId, quantity) => {
     try {
       setLoading(true);
-      const { cartItem } = await api.updateCartItem(itemId, quantity);
+      const { cartItem } = await api.updateCartQuantity(itemId, quantity);
       setCartItems(prev => 
         prev.map(item => item.id === itemId ? cartItem : item)
       );
@@ -119,6 +119,7 @@ export const CartProvider = ({ children }) => {
     error,
     addToCart,
     updateCartItem,
+    updateCartQuantity: updateCartItem,
     removeFromCart,
     clearCart,
     getCartTotal,
