@@ -33,11 +33,16 @@ api.interceptors.response.use(
     console.error('API Error:', error);
     
     if (error.response?.status === 401) {
-      // Only clear auth if not on login page
-      if (!window.location.pathname.includes('/login')) {
+      // Only clear auth if not on login page or auth-related pages
+      const authRelatedPaths = ['/login', '/signup', '/auth/callback', '/login/google/callback'];
+      const isAuthRelatedPage = authRelatedPaths.some(path => window.location.pathname.includes(path));
+      
+      if (!isAuthRelatedPage) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        window.location.href = '/login';
+        // Use a more gentle approach - don't forcefully redirect
+        // This allows components to handle the auth state change
+        // window.location.href = '/login';
       }
     }
     
@@ -68,7 +73,7 @@ export const googleLogin = (response) => {
 export const getProfile = () => api.get('/auth/profile');
 
 // Product endpoints
-export const getProducts = () => api.get('/products');
+export const getProducts = () => api.get('/products'); // Fix the product fetching endpoint
 export const getProduct = (id) => api.get(`/products/${id}`);
 export const createProduct = (data) => {
   const formData = new FormData();

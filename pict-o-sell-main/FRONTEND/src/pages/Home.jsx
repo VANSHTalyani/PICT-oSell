@@ -14,7 +14,7 @@ import toast from 'react-hot-toast';
 function Home() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
-  const { addToCart: addToCartContext } = useCart();
+  const { cartItems, addToCart: addToCartContext, updateCartQuantity } = useCart();
   const { addToWishlist: addToWishlistContext, removeFromWishlist, isInWishlist } = useWishlist();
   
   // State
@@ -84,8 +84,24 @@ function Home() {
     }
 
     try {
-      await addToCartContext(product);
-      toast.success('Added to cart!');
+      // Check if product is already in cart
+      const productInCart = cartItems.find(item => item.product.id === product.id);
+      const currentCartQuantity = productInCart ? productInCart.quantity : 0;
+      
+      // Check if there's still stock available
+      if (currentCartQuantity >= product.stock) {
+        toast.error(`Sorry, no more units available for this product`);
+        return;
+      }
+      
+      // Add 1 unit to cart (quick add from home page)
+      if (productInCart) {
+        await updateCartQuantity(productInCart.id, currentCartQuantity + 1);
+        toast.success(`Added 1 more item to cart! (Total: ${currentCartQuantity + 1})`);
+      } else {
+        await addToCartContext(product);
+        toast.success('Added to cart!');
+      }
     } catch (error) {
       console.error('Add to cart error:', error);
       toast.error('Failed to add item to cart');
