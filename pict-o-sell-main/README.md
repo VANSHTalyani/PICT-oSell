@@ -1,0 +1,2 @@
+Students often struggle to find affordable and reliable resources for their studies and personal needs. Many rely on informal platforms like the PICT OLX WhatsApp group, which is disorganized and time-consuming.
+PICT’o Sell aims to solve this by providing a dedicated e-commerce platform tailored for students. It simplifies buying and selling, offering everything from textbooks and gadgets to software subscriptions—all in one place. With a secure checkout and flexible payment options, students can trade with confidence, saving time and money while focusing on their studies.

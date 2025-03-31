@@ -1,0 +1,17 @@
+/* Seller Details Dark Mode Override */
+.dark .seller-details-card {
+  background-color: #151830 !important;
+  border-color: rgba(126, 34, 206, 0.3) !important;
+}
+
+.dark .seller-tag-icon {
+  color: #a78bfa !important; /* purple-400 */
+}
+
+.dark .seller-rating-star {
+  color: #fbbf24 !important; /* yellow-400 */
+}
+
+.dark .seller-rating-text {
+  color: #d1d5db !important; /* gray-300 */
+}
