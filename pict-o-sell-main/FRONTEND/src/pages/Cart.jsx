@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaTrash } from 'react-icons/fa';
 import { useCart } from '../context/CartContext';
@@ -8,23 +8,20 @@ import { formatPrice } from '../utils/formatPrice';
 
 const Cart = () => {
   const navigate = useNavigate();
-  const { cartItems, removeFromCart, updateCartItem, clearCart } = useCart();
+  const { cartItems, removeFromCart, updateCartItem, clearCart, getCartTotal } = useCart();
   const { isAuthenticated } = useAuth();
   const [loading, setLoading] = useState(false);
 
   // Redirect to login if not authenticated
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isAuthenticated && !localStorage.getItem('token')) {
       toast.error('Please login to view your cart');
       navigate('/login', { state: { from: '/cart' } });
     }
   }, [isAuthenticated, navigate]);
 
-  // Calculate cart total
-  const cartTotal = cartItems.reduce(
-    (total, item) => total + item.price * item.quantity,
-    0
-  );
+  // Calculate cart total using the getCartTotal function from context
+  const cartTotal = getCartTotal();
 
   const handleQuantityChange = async (item, newQuantity) => {
     if (newQuantity < 1) return;
@@ -114,12 +111,12 @@ const Cart = () => {
           <span>Continue Shopping</span>
         </button>
         
-        <div className="bg-white rounded-3xl shadow-lg overflow-hidden">
-          <div className="p-6 border-b border-gray-200">
-            <h1 className="text-2xl font-bold text-gray-800">Your Shopping Cart</h1>
+        <div className="bg-white rounded-3xl shadow-lg overflow-hidden dark:bg-gray-800">
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Your Shopping Cart</h1>
           </div>
           
-          <div className="divide-y divide-gray-200">
+          <div className="divide-y divide-gray-200 dark:divide-gray-700">
             {cartItems.map((item) => (
               <div key={item.id} className="p-6 flex flex-col sm:flex-row items-center sm:items-start gap-6">
                 <div className="w-24 h-24 flex-shrink-0">
@@ -131,35 +128,35 @@ const Cart = () => {
                 </div>
                 
                 <div className="flex-1">
-                  <h3 className="font-medium text-gray-800">{item.name}</h3>
-                  <p className="text-gray-500 text-sm">{item.category}</p>
-                  <div className="mt-2 font-semibold text-indigo-600">{formatPrice(item.price)}</div>
+                  <h3 className="font-medium text-gray-800 dark:text-white">{item.name}</h3>
+                  <p className="text-gray-500 text-sm dark:text-gray-400">{item.category}</p>
+                  <div className="mt-2 font-semibold text-indigo-600 dark:text-indigo-400">{formatPrice(item.price)}</div>
                 </div>
                 
                 <div className="flex items-center space-x-2">
                   <button 
                     onClick={() => handleQuantityChange(item, item.quantity - 1)}
-                    className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100"
+                    className="w-8 h-8 rounded-full border border-gray-300 dark:border-gray-600 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700"
                     disabled={item.quantity <= 1}
                   >
                     -
                   </button>
-                  <span className="w-8 text-center">{item.quantity}</span>
+                  <span className="w-8 text-center dark:text-white">{item.quantity}</span>
                   <button 
                     onClick={() => handleQuantityChange(item, item.quantity + 1)}
-                    className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100"
+                    className="w-8 h-8 rounded-full border border-gray-300 dark:border-gray-600 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700"
                   >
                     +
                   </button>
                 </div>
                 
-                <div className="font-semibold text-gray-800">
+                <div className="font-semibold text-gray-800 dark:text-white">
                   {formatPrice(item.price * item.quantity)}
                 </div>
                 
                 <button 
                   onClick={() => handleRemoveItem(item.id)}
-                  className="text-red-500 hover:text-red-700"
+                  className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
                 >
                   <FaTrash />
                 </button>
@@ -183,7 +180,7 @@ const Cart = () => {
             
             <button
               onClick={handleCheckout}
-              disabled={loading}
+              disabled={loading || cartItems.length === 0}
               className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 text-white py-4 rounded-xl font-semibold hover:from-indigo-700 hover:to-violet-700 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {loading ? 'Processing...' : 'Proceed to Checkout'}

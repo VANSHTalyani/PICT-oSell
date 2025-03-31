@@ -33,7 +33,15 @@ export const CartProvider = ({ children }) => {
     try {
       setLoading(true);
       const { cartItems } = await api.getCart();
-      setCartItems(cartItems);
+      // Transform cart items to ensure consistent price access
+      const transformedItems = cartItems.map(item => ({
+        ...item,
+        price: item.Product ? item.Product.price : item.price,
+        name: item.Product ? item.Product.title : item.name,
+        image: item.Product ? item.Product.image_path : item.image,
+        category: item.Product ? item.Product.category : item.category
+      }));
+      setCartItems(transformedItems);
     } catch (error) {
       console.error('Load cart error:', error);
       setError(error);
@@ -47,8 +55,16 @@ export const CartProvider = ({ children }) => {
     try {
       setLoading(true);
       const { cartItem } = await api.addToCart(product.id, quantity);
-      setCartItems(prev => [...prev, cartItem]);
-      return cartItem;
+      // Transform cart item to ensure consistent price access
+      const transformedItem = {
+        ...cartItem,
+        price: cartItem.Product ? cartItem.Product.price : cartItem.price,
+        name: cartItem.Product ? cartItem.Product.title : cartItem.name,
+        image: cartItem.Product ? cartItem.Product.image_path : cartItem.image,
+        category: cartItem.Product ? cartItem.Product.category : cartItem.category
+      };
+      setCartItems(prev => [...prev, transformedItem]);
+      return transformedItem;
     } catch (error) {
       console.error('Add to cart error:', error);
       setError(error);
@@ -62,10 +78,18 @@ export const CartProvider = ({ children }) => {
     try {
       setLoading(true);
       const { cartItem } = await api.updateCartQuantity(itemId, quantity);
+      // Transform cart item to ensure consistent price access
+      const transformedItem = {
+        ...cartItem,
+        price: cartItem.Product ? cartItem.Product.price : cartItem.price,
+        name: cartItem.Product ? cartItem.Product.title : cartItem.name,
+        image: cartItem.Product ? cartItem.Product.image_path : cartItem.image,
+        category: cartItem.Product ? cartItem.Product.category : cartItem.category
+      };
       setCartItems(prev => 
-        prev.map(item => item.id === itemId ? cartItem : item)
+        prev.map(item => item.id === itemId ? transformedItem : item)
       );
-      return cartItem;
+      return transformedItem;
     } catch (error) {
       console.error('Update cart error:', error);
       setError(error);
@@ -105,7 +129,8 @@ export const CartProvider = ({ children }) => {
 
   const getCartTotal = () => {
     return cartItems.reduce((total, item) => {
-      return total + (item.Product.price * item.quantity);
+      // Use item.price directly since we've already transformed the items
+      return total + (item.price * item.quantity);
     }, 0);
   };
 
