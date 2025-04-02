@@ -167,11 +167,42 @@ export const AuthProvider = ({ children }) => {
     toast.success('Logged out successfully');
   };
 
+  const register = async (userData) => {
+    try {
+      setState(prev => ({ ...prev, loading: true, error: null }));
+      const { token, user } = await api.register(userData);
+      
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+      
+      setState({
+        isAuthenticated: true,
+        user,
+        token,
+        loading: false,
+        error: null
+      });
+      
+      toast.success('Registration successful!');
+      return user;
+    } catch (error) {
+      console.error('Registration error:', error);
+      setState(prev => ({ 
+        ...prev, 
+        loading: false,
+        error: error.message || 'Registration failed'
+      }));
+      toast.error(error.message || 'Registration failed');
+      throw error;
+    }
+  };
+
   const value = {
     ...state,
     login,
     logout,
-    googleLogin
+    googleLogin,
+    register
   };
 
   return (

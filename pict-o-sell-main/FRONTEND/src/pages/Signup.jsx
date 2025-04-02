@@ -58,8 +58,14 @@ function Signup() {
       toast.success('Account created successfully!');
       navigate('/');
     } catch (err) {
-      setError(err.message || 'Failed to create account');
-      toast.error(err.message || 'Failed to create account');
+      // Check if the error is related to an existing email
+      if (err.message && err.message.toLowerCase().includes('email already exists')) {
+        setError('This email is already registered. Please use a different email or login to your existing account.');
+        toast.error('This email is already registered');
+      } else {
+        setError(err.message || 'Failed to create account');
+        toast.error(err.message || 'Failed to create account');
+      }
     } finally {
       setLoading(false);
     }

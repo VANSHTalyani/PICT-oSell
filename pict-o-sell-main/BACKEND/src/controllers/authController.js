@@ -7,6 +7,7 @@ exports.register = async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
+    // Check if email already exists
     const userExists = await User.findOne({
       where: {
         email
@@ -16,7 +17,7 @@ exports.register = async (req, res) => {
     if (userExists) {
       return res.status(400).json({
         success: false,
-        message: 'Email already exists'
+        message: 'Email already exists. Please use a different email or login with your existing account.'
       });
     }
 
@@ -46,6 +47,15 @@ exports.register = async (req, res) => {
     });
   } catch (error) {
     console.error('Registration error:', error);
+    
+    // Check if error is a Sequelize unique constraint error
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Email already exists. Please use a different email or login with your existing account.'
+      });
+    }
+    
     res.status(500).json({
       success: false,
       message: 'Error registering user'
