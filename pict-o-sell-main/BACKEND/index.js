@@ -86,35 +86,64 @@ const upload = multer({ storage: storage })
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
 
 app.post('/postAd', upload.single('image'), (req, res) => {
-    console.log(req.body)
-    if (!req.file) {
-        console.log("no file uploaded!!")
-        return 
+    // Verify JWT token for authentication
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ message: 'Authentication required' });
     }
-    console.log(req.file)
-    const title = req.body.title
-    const price = req.body.price
-    const description = req.body.description
-    const category = req.body.category
-    const image = req.file.path
     
-    const product = new Product({ title, price, description, category, image }) 
+    const token = authHeader.split(' ')[1];
+    try {
+        const decoded = jwt.verify(token, 'SECKEY');
+        // Token is valid, continue with post creation
+    } catch (err) {
+        return res.status(401).json({ message: 'Invalid or expired token' });
+    }
+    
+    console.log(req.body);
+    if (!req.file) {
+        return res.status(400).json({ message: 'No image uploaded' });
+    }
+    
+    console.log(req.file);
+    const title = req.body.title;
+    const price = req.body.price;
+    const description = req.body.description;
+    const category = req.body.category;
+    // Store only the relative path to make retrieval consistent
+    const image = '/uploads/' + req.file.filename;
+    
+    const product = new Product({ title, price, description, category, image });
     product.save()
         .then(() => {
-            res.send({message:'Saved success!!'})
-        }).catch(() => {
-            res.send({message:'server error'})
-        })
+            res.status(201).json({ message: 'Ad posted successfully!', product });
+        }).catch((err) => {
+            console.error('Error saving product:', err);
+            res.status(500).json({ message: 'Server error while saving product' });
+        });
 })
 
 app.get('/products', (req, res) => {
     Product.find()
-        .then((result) => {
-            // console.log()
-            res.send({products:result})
+        .then((products) => {
+            // Format the products to ensure image URLs are properly formed
+            const formattedProducts = products.map(product => {
+                const productObj = product.toObject();
+                // Ensure the image path is properly formatted
+                if (productObj.image && !productObj.image.startsWith('http')) {
+                    // If it's a relative path, make sure it's properly formatted
+                    if (!productObj.image.startsWith('/uploads/') && productObj.image.includes('uploads')) {
+                        productObj.image = '/uploads/' + productObj.image.split('uploads/')[1];
+                    }
+                }
+                return productObj;
+            });
+            
+            res.status(200).json({ success: true, products: formattedProducts });
         }).catch((err) => {
-            res.send({message: 'server error'})
-        })
+            console.error('Error fetching products:', err);
+            res.status(500).json({ success: false, message: 'Server error while fetching products' });
+        });
 })
 
 app.listen(port, () => {

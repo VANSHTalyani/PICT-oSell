@@ -35,10 +35,19 @@ function ProductListing() {
     const fetchProducts = async () => {
       setLoading(true);
       try {
-        const url = 'http://localhost:3000/products';
+        const url = 'http://localhost:5000/api/products';
         const response = await axios.get(url);
         if (response.data.products) {
-          setProducts(response.data.products);
+          console.log('Products received from API:', response.data.products);
+          // Ensure quantity is properly handled
+          const productsWithQuantity = response.data.products.map(product => {
+            // If quantity is missing or null, set a default of 0
+            return {
+              ...product,
+              quantity: product.quantity || product.stock || 0
+            };
+          });
+          setProducts(productsWithQuantity);
         }
       } catch (error) {
         console.error('Error fetching products:', error);
@@ -249,10 +258,16 @@ function ProductListing() {
                 {/* Product Image with Enhanced Overlay */}
                 <div className="relative aspect-square mb-4 overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-700">
                   <img
-                    src={'http://localhost:3000/' + product.image}
+                    src={product.image.startsWith('http') 
+                      ? product.image 
+                      : `http://localhost:5000${product.image.startsWith('/') ? '' : '/'}${product.image}`}
                     alt={product.title}
                     className="w-full h-full object-cover transform transition-transform group-hover:scale-110 duration-500"
                     loading="lazy"
+                    onError={(e) => {
+                      console.error(`Failed to load image for product: ${product.title}`);
+                      e.target.src = 'https://via.placeholder.com/300?text=Image+Not+Available';
+                    }}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   
@@ -309,9 +324,20 @@ function ProductListing() {
                   </div>
                   
                   <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-700">
-                    <span className="text-lg font-bold text-gray-900 dark:text-white">
-                      {formatPrice(product.price)}
-                    </span>
+                    <div className="flex flex-col">
+                      <span className="text-lg font-bold text-gray-900 dark:text-white">
+                        {formatPrice(product.price)}
+                      </span>
+                      {product.quantity > 0 ? (
+                        <span className="text-xs font-medium text-green-700 dark:text-green-400">
+                          {product.quantity} {product.quantity === 1 ? 'item' : 'items'} in stock
+                        </span>
+                      ) : (
+                        <span className="text-xs font-medium text-red-600 dark:text-red-400">
+                          Out of stock
+                        </span>
+                      )}
+                    </div>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();

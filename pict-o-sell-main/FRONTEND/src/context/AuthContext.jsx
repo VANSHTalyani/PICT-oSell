@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import * as api from '../services/api';
-import { toast } from 'react-hot-toast';
+import { showUniqueToast } from '../utils/toastManager';
 
 const AuthContext = createContext();
 
@@ -56,10 +56,12 @@ export const AuthProvider = ({ children }) => {
             loading: false,
             error: 'Session expired. Please login again.'
           }));
+          showUniqueToast('Session expired. Please login again.', 'error');
         }
       } catch (error) {
         console.error('Auth initialization error:', error);
         setState(prev => ({ ...prev, loading: false, error: error.message }));
+        showUniqueToast(error.message, 'error');
       }
     };
 
@@ -82,7 +84,7 @@ export const AuthProvider = ({ children }) => {
         error: null
       });
       
-      toast.success('Login successful!');
+      showUniqueToast('Login successful!', 'success');
       return user;
     } catch (error) {
       console.error('Login error:', error);
@@ -91,7 +93,7 @@ export const AuthProvider = ({ children }) => {
         loading: false,
         error: error.message || 'Login failed'
       }));
-      toast.error(error.message || 'Login failed');
+      showUniqueToast(error.message || 'Login failed', 'error');
       throw error;
     }
   };
@@ -117,6 +119,12 @@ export const AuthProvider = ({ children }) => {
           return { user: userData.user, token: response };
         } catch (profileError) {
           console.error('Error fetching profile with token:', profileError);
+          setState(prev => ({ 
+            ...prev, 
+            loading: false,
+            error: profileError.message || 'Failed to fetch profile'
+          }));
+          showUniqueToast(profileError.message || 'Failed to fetch profile', 'error');
           throw profileError;
         }
       } else {
@@ -149,7 +157,7 @@ export const AuthProvider = ({ children }) => {
         loading: false,
         error: error.message || 'Failed to login with Google'
       }));
-      toast.error(error.message || 'Google login failed');
+      showUniqueToast(error.message || 'Google login failed', 'error');
       throw error;
     }
   };
@@ -164,7 +172,7 @@ export const AuthProvider = ({ children }) => {
       loading: false,
       error: null
     });
-    toast.success('Logged out successfully');
+    showUniqueToast('Logged out successfully', 'success');
   };
 
   const register = async (userData) => {
@@ -183,7 +191,7 @@ export const AuthProvider = ({ children }) => {
         error: null
       });
       
-      toast.success('Registration successful!');
+      showUniqueToast('Registration successful!', 'success');
       return user;
     } catch (error) {
       console.error('Registration error:', error);
@@ -192,7 +200,7 @@ export const AuthProvider = ({ children }) => {
         loading: false,
         error: error.message || 'Registration failed'
       }));
-      toast.error(error.message || 'Registration failed');
+      showUniqueToast(error.message || 'Registration failed', 'error');
       throw error;
     }
   };

@@ -5,12 +5,34 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
 import { formatPrice } from '../utils/formatPrice';
+import { API_URL } from '../config/constants';
 
 const Cart = () => {
   const navigate = useNavigate();
   const { cartItems, removeFromCart, updateCartItem, clearCart, getCartTotal } = useCart();
   const { isAuthenticated } = useAuth();
   const [loading, setLoading] = useState(false);
+
+  // Function to get the correct image URL
+  const getImageUrl = (item) => {
+    // First try to get image from Product object if it exists
+    if (item.Product && item.Product.image_path) {
+      const imagePath = item.Product.image_path;
+      return `http://localhost:5000${imagePath.startsWith('/') ? '' : '/'}${imagePath}`;
+    }
+    
+    // Then try the direct image property
+    if (item.image) {
+      if (item.image.startsWith('http')) {
+        return item.image;
+      } else {
+        return `http://localhost:5000${item.image.startsWith('/') ? '' : '/'}${item.image}`;
+      }
+    }
+    
+    // Fallback to placeholder
+    return '/placeholder-image.svg';
+  };
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -43,8 +65,24 @@ const Cart = () => {
     }
   };
 
+  const handleClearCart = async () => {
+    try {
+      await clearCart();
+      toast.success('Cart cleared');
+    } catch (error) {
+      toast.error('Failed to clear cart');
+    }
+  };
+
   const handleCheckout = () => {
     navigate('/checkout');
+  };
+
+  // Handle image errors
+  const handleImageError = (e) => {
+    console.log('Image failed to load:', e.target.src);
+    e.target.onerror = null; // Prevent infinite error loops
+    e.target.src = '/placeholder-image.svg';
   };
 
   // Show loading state while cart is empty but user is authenticated
@@ -121,9 +159,14 @@ const Cart = () => {
               <div key={item.id} className="p-6 flex flex-col sm:flex-row items-center sm:items-start gap-6">
                 <div className="w-24 h-24 flex-shrink-0">
                   <img 
-                    src={item.image} 
+                    src={item.Product && item.Product.image 
+                      ? `http://localhost:5000${item.Product.image.startsWith('/') ? '' : '/'}${item.Product.image}`
+                      : (item.image 
+                          ? `http://localhost:5000${item.image.startsWith('/') ? '' : '/'}${item.image}`
+                          : '/placeholder-image.svg')}
                     alt={item.name} 
                     className="w-full h-full object-cover rounded-lg"
+                    onError={handleImageError}
                   />
                 </div>
                 

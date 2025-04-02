@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import toast from 'react-hot-toast';
+import { showUniqueToast } from '../utils/toastManager';
 import { useAuth } from './AuthContext';
 
 const WishlistContext = createContext();
@@ -32,23 +32,23 @@ export const WishlistProvider = ({ children }) => {
   // Add item to wishlist
   const addToWishlist = (product) => {
     if (!isAuthenticated) {
-      toast.error('Please login to add items to your wishlist');
+      showUniqueToast('Please login to add items to your wishlist', 'error');
       return;
     }
 
     if (wishlist.some(item => item.id === product.id)) {
-      toast.error('Item already in wishlist');
+      showUniqueToast('Item already in wishlist', 'error');
       return;
     }
 
     setWishlist(prev => [...prev, product]);
-    toast.success('Added to wishlist');
+    showUniqueToast('Added to wishlist', 'success');
   };
 
   // Remove item from wishlist
   const removeFromWishlist = (productId) => {
     setWishlist(prev => prev.filter(item => item.id !== productId));
-    toast.success('Removed from wishlist');
+    showUniqueToast('Removed from wishlist', 'success');
   };
 
   // Check if item is in wishlist
@@ -59,7 +59,7 @@ export const WishlistProvider = ({ children }) => {
   // Clear wishlist
   const clearWishlist = () => {
     setWishlist([]);
-    toast.success('Wishlist cleared');
+    showUniqueToast('Wishlist cleared', 'success');
   };
 
   const value = {

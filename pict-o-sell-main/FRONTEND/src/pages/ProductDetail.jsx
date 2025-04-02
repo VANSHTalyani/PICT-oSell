@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { FaShoppingCart, FaHeart, FaCheck, FaTag, FaArrowLeft, FaPlus, FaMinus } from 'react-icons/fa';
+import { FiX, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useAuth } from '../context/AuthContext';
-import { toast } from 'react-hot-toast';
+import { showUniqueToast } from '../utils/toastManager';
 import { formatPrice } from '../utils/formatPrice';
 import * as api from '../services/api';
 import '../styles/sellerDetails.css';
@@ -21,6 +22,11 @@ function ProductDetail() {
   const [product, setProduct] = useState(location.state?.product || null);
   const [fetchError, setFetchError] = useState(null);
   const [quantity, setQuantity] = useState(1);
+  const [imageError, setImageError] = useState(false);
+  const [showFullImage, setShowFullImage] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [productImages, setProductImages] = useState([]);
+  const [fullImageTransition, setFullImageTransition] = useState(false);
 
   // Check if product is already in cart and get current quantity
   const productInCart = cartItems?.find(item => {
@@ -43,6 +49,23 @@ function ProductDetail() {
   // Keep track of the last successful cart operation
   const [lastAddedQuantity, setLastAddedQuantity] = useState(0);
 
+  // Function to get the correct image URL
+  const getImageUrl = (product, imagePath) => {
+    if (!imagePath) return 'https://via.placeholder.com/500?text=No+Image';
+    
+    if (imagePath.startsWith('http')) {
+      return imagePath;
+    } else {
+      return `http://localhost:5000${imagePath.startsWith('/') ? '' : '/'}${imagePath}`;
+    }
+  };
+
+  // Handle image loading error
+  const handleImageError = () => {
+    console.error(`Failed to load image for product: ${product?.title || 'Unknown Product'}`);
+    setImageError(true);
+  };
+
   // Fetch product data if not available in location state
   useEffect(() => {
     const fetchProductData = async () => {
@@ -53,12 +76,43 @@ function ProductDetail() {
           
           // Check if the response has the expected structure
           if (response && response.product) {
-            setProduct(response.product);
+            // Normalize product data
+            const normalizedProduct = {
+              ...response.product,
+              // Ensure stock/quantity is properly set
+              stock: response.product.stock || response.product.quantity || 0,
+              // Ensure price is a number
+              price: typeof response.product.price === 'string' ? parseFloat(response.product.price) : response.product.price,
+              // Ensure rating is a number
+              rating: response.product.rating || 0,
+              // Ensure seller information is present
+              seller: response.product.seller || { username: 'Unknown Seller' }
+            };
+            
+            // Process images
+            processProductImages(normalizedProduct);
+            
+            setProduct(normalizedProduct);
             setFetchError(null);
           } else if (response) {
             // If we got a response but it doesn't have the expected structure
             // This might happen if the API returns a different format
-            setProduct(response); // Try using the response directly
+            const normalizedProduct = {
+              ...response,
+              // Ensure stock/quantity is properly set
+              stock: response.stock || response.quantity || 0,
+              // Ensure price is a number
+              price: typeof response.price === 'string' ? parseFloat(response.price) : response.price,
+              // Ensure rating is a number
+              rating: response.rating || 0,
+              // Ensure seller information is present
+              seller: response.seller || { username: 'Unknown Seller' }
+            };
+            
+            // Process images
+            processProductImages(normalizedProduct);
+            
+            setProduct(normalizedProduct);
             setFetchError(null);
           } else {
             throw new Error('Invalid product data received');
@@ -66,15 +120,45 @@ function ProductDetail() {
         } catch (error) {
           console.error('Error fetching product:', error);
           setFetchError('Failed to load product details. Please try again.');
-          toast.error('Failed to load product details');
+          showUniqueToast('Failed to load product details', 'error');
         } finally {
           setLoading(false);
         }
+      } else if (product) {
+        // Process images for product from location state
+        processProductImages(product);
       }
     };
 
     fetchProductData();
   }, [id, product]);
+
+  // Process product images
+  const processProductImages = (productData) => {
+    // Initialize images array
+    let images = [];
+    
+    // Handle case where product has images array
+    if (productData.images && Array.isArray(productData.images) && productData.images.length > 0) {
+      images = productData.images;
+    } 
+    // Handle case where product has a single image
+    else if (productData.image) {
+      images = [productData.image];
+    }
+    
+    // If we have additional images in a different format (e.g., additionalImages)
+    if (productData.additionalImages && Array.isArray(productData.additionalImages)) {
+      images = [...images, ...productData.additionalImages];
+    }
+    
+    // Remove duplicates
+    images = [...new Set(images)];
+    
+    // Set the product images
+    setProductImages(images);
+    console.log('Processed product images:', images);
+  };
 
   // Reset quantity when product changes
   useEffect(() => {
@@ -89,7 +173,7 @@ function ProductDetail() {
     if (quantity < actualAvailableStock) {
       setQuantity(prev => prev + 1);
     } else {
-      toast.error(`Sorry, only ${actualAvailableStock} more units available`);
+      showUniqueToast(`Sorry, only ${actualAvailableStock} more units available`, 'error');
     }
   };
 
@@ -123,6 +207,29 @@ function ProductDetail() {
       decreaseQuantity();
     }
   };
+
+  // Handle keyboard events for the full image viewer
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (showFullImage) {
+        if (e.key === 'Escape') {
+          setFullImageTransition(false);
+          setTimeout(() => {
+            setShowFullImage(false);
+          }, 300);
+        } else if (e.key === 'ArrowLeft' && currentImageIndex > 0) {
+          setCurrentImageIndex(prev => prev - 1);
+        } else if (e.key === 'ArrowRight' && currentImageIndex < productImages.length - 1) {
+          setCurrentImageIndex(prev => prev + 1);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showFullImage, currentImageIndex, productImages.length]);
 
   // If loading or no product is available yet
   if (loading || (!product && !fetchError)) {
@@ -168,12 +275,94 @@ function ProductDetail() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 bg-white dark:bg-gray-800 rounded-3xl shadow-2xl border-2 border-indigo-100 dark:border-indigo-900 overflow-hidden">
           {/* Image Section with Hover Effect */}
           <div className="relative group">
-            <img 
-              src={product.image} 
-              alt={product.title} 
-              className="w-full h-[500px] object-cover transition-transform duration-300 group-hover:scale-105"
-            />
-            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-300"></div>
+            {productImages.length > 0 ? (
+              <div 
+                className="w-full h-[500px] cursor-zoom-in"
+                onClick={() => {
+                  setFullImageTransition(true);
+                  setShowFullImage(true);
+                }}
+              >
+                <img 
+                  src={imageError ? 'https://via.placeholder.com/500?text=No+Image' : getImageUrl(product, productImages[currentImageIndex])} 
+                  alt={product.title} 
+                  onError={handleImageError}
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-300"></div>
+              </div>
+            ) : (
+              <div 
+                className="w-full h-[500px] cursor-zoom-in"
+                onClick={() => {
+                  setFullImageTransition(true);
+                  setShowFullImage(true);
+                }}
+              >
+                <img 
+                  src={imageError ? 'https://via.placeholder.com/500?text=No+Image' : getImageUrl(product, product.image)} 
+                  alt={product.title} 
+                  onError={handleImageError}
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-300"></div>
+              </div>
+            )}
+            
+            {/* Image navigation controls */}
+            {productImages.length > 1 && (
+              <div className="absolute bottom-0 left-0 right-0 p-4 flex justify-between">
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentImageIndex(prev => prev - 1);
+                  }} 
+                  disabled={currentImageIndex === 0}
+                  className="text-2xl text-white bg-black bg-opacity-50 p-2 rounded-full disabled:opacity-50 disabled:cursor-not-allowed z-10"
+                >
+                  <FiChevronLeft />
+                </button>
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentImageIndex(prev => prev + 1);
+                  }} 
+                  disabled={currentImageIndex === productImages.length - 1}
+                  className="text-2xl text-white bg-black bg-opacity-50 p-2 rounded-full disabled:opacity-50 disabled:cursor-not-allowed z-10"
+                >
+                  <FiChevronRight />
+                </button>
+              </div>
+            )}
+            
+            {/* Image thumbnails */}
+            {productImages.length > 1 && (
+              <div className="absolute -bottom-16 left-0 right-0 flex justify-center space-x-2 overflow-x-auto py-2">
+                {productImages.map((img, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentImageIndex(index)}
+                    className={`
+                      w-16 h-16 rounded-md overflow-hidden border-2 
+                      ${currentImageIndex === index 
+                        ? 'border-indigo-500 shadow-md' 
+                        : 'border-gray-200 dark:border-gray-700'
+                      }
+                      transition-all hover:border-indigo-300
+                    `}
+                  >
+                    <img 
+                      src={getImageUrl(product, img)} 
+                      alt={`${product.title} - view ${index + 1}`}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.src = 'https://via.placeholder.com/80?text=Image';
+                      }}
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Product Details Section */}
@@ -204,28 +393,42 @@ function ProductDetail() {
             </div>
 
             <div className="space-y-4">
-              <div className="flex items-center space-x-4">
-                <span className="text-3xl font-bold text-indigo-600 dark:text-indigo-400">
-                  {formatPrice(product.price)}
-                </span>
-                <span className={`px-3 py-1 rounded-full flex items-center space-x-2 ${
-                  remainingStock > 5 
-                    ? 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30' 
-                    : remainingStock > 0
-                      ? 'text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30'
-                      : 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30'
-                }`}>
-                  <FaCheck className={`${
-                    remainingStock > 0 
-                      ? 'text-green-600 dark:text-green-400' 
-                      : 'text-red-600 dark:text-red-400'
-                  }`} />
-                  <span>
-                    {remainingStock > 0 
-                      ? `${remainingStock} available` 
-                      : 'Out of stock'}
+              <div className="flex flex-col space-y-2">
+                <div className="flex items-baseline space-x-2">
+                  <span className="text-3xl font-bold text-indigo-600 dark:text-indigo-400">
+                    {formatPrice(product.price)}
                   </span>
-                </span>
+                  {product.originalPrice && product.originalPrice > product.price && (
+                    <span className="text-lg line-through text-gray-400 dark:text-gray-500">
+                      {formatPrice(product.originalPrice)}
+                    </span>
+                  )}
+                </div>
+                
+                {/* Stock Status Indicator */}
+                <div className="flex items-center space-x-2">
+                  <span 
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      product.stock === 0
+                        ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                        : product.stock <= 5
+                          ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
+                          : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                    }`}
+                  >
+                    {product.stock === 0 
+                      ? 'Out of Stock' 
+                      : product.stock <= 5 
+                        ? `Only ${product.stock} left!` 
+                        : `${product.stock} in stock`}
+                  </span>
+                  
+                  {product.stock > 0 && (
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      {currentCartQuantity > 0 && `(${currentCartQuantity} in your cart)`}
+                    </span>
+                  )}
+                </div>
               </div>
 
               {currentCartQuantity > 0 && (
@@ -304,7 +507,7 @@ function ProductDetail() {
                       
                       // Check if adding this quantity would exceed stock
                       if (currentCartQuantity + quantity > product.stock) {
-                        toast.error(`Cannot add ${quantity} more items. Only ${product.stock - currentCartQuantity} left in stock.`);
+                        showUniqueToast(`Cannot add ${quantity} more items. Only ${product.stock - currentCartQuantity} left in stock.`, 'error');
                         setLoading(false);
                         return;
                       }
@@ -312,10 +515,10 @@ function ProductDetail() {
                       // If product is already in cart, update the quantity instead of adding a new item
                       if (productInCart) {
                         await updateCartItem(productInCart.id, currentCartQuantity + quantity);
-                        toast.success(`Added ${quantity} more item${quantity > 1 ? 's' : ''} to cart! (Total: ${currentCartQuantity + quantity})`);
+                        showUniqueToast(`Added ${quantity} more item${quantity > 1 ? 's' : ''} to cart! (Total: ${currentCartQuantity + quantity})`, 'success');
                       } else {
                         await addToCart(product, quantity);
-                        toast.success(`Added ${quantity} item${quantity > 1 ? 's' : ''} to cart!`);
+                        showUniqueToast(`Added ${quantity} item${quantity > 1 ? 's' : ''} to cart!`, 'success');
                       }
                       
                       // Store the last added quantity for reference
@@ -330,7 +533,7 @@ function ProductDetail() {
                       console.error('Add to cart error:', error);
                       // Don't show the error if it's handled by the API interceptor
                       if (!error.includes('Please login')) {
-                        toast.error(error || 'Failed to add to cart');
+                        showUniqueToast(error || 'Failed to add to cart', 'error');
                       }
                     } finally {
                       setLoading(false);
@@ -361,7 +564,7 @@ function ProductDetail() {
                 <button 
                   onClick={async () => {
                     if (!isAuthenticated) {
-                      toast.error('Please login to add items to wishlist');
+                      showUniqueToast('Please login to add items to wishlist', 'error');
                       navigate('/login', { 
                         state: { 
                           from: location.pathname,
@@ -374,15 +577,15 @@ function ProductDetail() {
                     try {
                       if (isInWishlist(product.id)) {
                         await removeFromWishlist(product.id);
-                        toast.success('Removed from wishlist!');
+                        showUniqueToast('Removed from wishlist!', 'success');
                       } else {
                         await addToWishlist(product.id);
-                        toast.success('Added to wishlist!');
+                        showUniqueToast('Added to wishlist!', 'success');
                       }
                     } catch (error) {
                       console.error('Wishlist error:', error);
                       if (!error.includes('Please login')) {
-                        toast.error(error || 'Failed to update wishlist');
+                        showUniqueToast(error || 'Failed to update wishlist', 'error');
                       }
                     }
                   }}
@@ -403,34 +606,90 @@ function ProductDetail() {
             </div>
 
             {/* Seller Information */}
-            <div className="bg-indigo-50 dark:bg-indigo-900/30 seller-details-card p-5 rounded-lg border border-indigo-100 dark:border-indigo-800 space-y-2">
+            <div className="border-t border-indigo-100 dark:border-indigo-900/50 pt-4">
+              <h3 className="text-lg font-semibold mb-2 text-gray-700 dark:text-gray-300">Seller Information</h3>
               <div className="flex items-center space-x-3">
-                <FaTag className="text-indigo-600 dark:text-indigo-400 seller-tag-icon text-xl" />
-                <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Seller Details</h3>
-              </div>
-              {product.seller ? (
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="font-medium text-gray-800 dark:text-gray-200">{product.seller.name}</p>
-                    <div className="flex items-center space-x-1">
-                      <span className="text-amber-500 seller-rating-star">★</span>
-                      <span className="text-gray-600 dark:text-gray-400 seller-rating-text">{product.seller.rating} Seller Rating</span>
-                    </div>
-                  </div>
-                  <button 
-                    className="px-4 py-2 bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 rounded-lg border border-indigo-200 dark:border-indigo-700 hover:bg-indigo-50 dark:hover:bg-gray-600 transition-colors"
-                    onClick={() => navigate(`/seller/${product.seller.id}`)}
-                  >
-                    View Profile
-                  </button>
+                <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-900 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                  {product.seller?.username?.charAt(0).toUpperCase() || 'S'}
                 </div>
-              ) : (
-                <p className="text-gray-600 dark:text-gray-400">Seller information not available</p>
-              )}
+                <div>
+                  <p className="font-medium text-gray-800 dark:text-white">
+                    {product.seller?.username || 'Unknown Seller'}
+                  </p>
+                  {product.seller?.email && (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      {product.seller.email}
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
+      {showFullImage && (
+        <div className={`fixed top-0 left-0 right-0 bottom-0 bg-black flex items-center justify-center z-50 
+          ${fullImageTransition ? 'opacity-100' : 'opacity-0'} 
+          transition-opacity duration-300 ease-in-out`}
+        >
+          <button 
+            onClick={() => {
+              setFullImageTransition(false);
+              setTimeout(() => {
+                setShowFullImage(false);
+              }, 300);
+            }} 
+            className="absolute top-4 right-4 text-3xl text-white bg-black bg-opacity-50 p-2 rounded-full hover:bg-opacity-70 transition-all"
+            aria-label="Close fullscreen view"
+          >
+            <FiX />
+          </button>
+          
+          {/* Navigation controls */}
+          {productImages.length > 1 && (
+            <>
+              <button 
+                onClick={() => setCurrentImageIndex(prev => Math.max(0, prev - 1))}
+                disabled={currentImageIndex === 0}
+                className="absolute left-4 top-1/2 transform -translate-y-1/2 text-4xl text-white bg-black bg-opacity-50 p-2 rounded-full hover:bg-opacity-70 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                aria-label="Previous image"
+              >
+                <FiChevronLeft />
+              </button>
+              <button 
+                onClick={() => setCurrentImageIndex(prev => Math.min(productImages.length - 1, prev + 1))}
+                disabled={currentImageIndex === productImages.length - 1}
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-4xl text-white bg-black bg-opacity-50 p-2 rounded-full hover:bg-opacity-70 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                aria-label="Next image"
+              >
+                <FiChevronRight />
+              </button>
+            </>
+          )}
+          
+          {/* Image counter and keyboard instructions */}
+          <div className="absolute bottom-4 left-0 right-0 flex flex-col items-center">
+            {productImages.length > 1 && (
+              <div className="text-white bg-black bg-opacity-50 px-4 py-2 rounded-full mb-2">
+                {currentImageIndex + 1} / {productImages.length}
+              </div>
+            )}
+            <div className="text-white text-sm bg-black bg-opacity-50 px-4 py-2 rounded-full">
+              Press <kbd className="px-2 py-0.5 bg-gray-700 rounded">ESC</kbd> to close, 
+              {productImages.length > 1 && (
+                <> <kbd className="px-2 py-0.5 bg-gray-700 rounded mx-1">←</kbd> <kbd className="px-2 py-0.5 bg-gray-700 rounded mx-1">→</kbd> to navigate</>
+              )}
+            </div>
+          </div>
+          
+          <img 
+            src={imageError ? 'https://via.placeholder.com/800?text=No+Image' : getImageUrl(product, productImages.length > 0 ? productImages[currentImageIndex] : product.image)} 
+            alt={product.title} 
+            onError={handleImageError}
+            className={`max-w-[90vw] max-h-[90vh] object-contain transform transition-transform duration-300 ${fullImageTransition ? 'scale-100' : 'scale-95'}`}
+          />
+        </div>
+      )}
     </div>
   );
 }

@@ -30,6 +30,17 @@ function Home() {
     categories: true
   });
 
+  // Function to get the correct image URL
+  const getImageUrl = (product) => {
+    if (!product.image) return 'https://via.placeholder.com/300?text=No+Image';
+    
+    if (product.image.startsWith('http')) {
+      return product.image;
+    } else {
+      return `http://localhost:5000${product.image.startsWith('/') ? '' : '/'}${product.image}`;
+    }
+  };
+
   // Fetch products
   useEffect(() => {
     const fetchProducts = async () => {
@@ -48,7 +59,25 @@ function Home() {
         }
 
         const response = await api.getProducts(params);
-        setProducts(response.products || []);
+        
+        // Process products to ensure all required fields are present
+        const processedProducts = (response.products || []).map(product => {
+          // Normalize product data
+          return {
+            ...product,
+            // Ensure stock/quantity is properly set
+            stock: product.stock || product.quantity || 0,
+            // Ensure image path is valid
+            image: product.image || null,
+            // Ensure price is a number
+            price: typeof product.price === 'string' ? parseFloat(product.price) : product.price,
+            // Ensure seller information is present
+            seller: product.seller || { username: 'Unknown Seller' }
+          };
+        });
+        
+        console.log('Processed products:', processedProducts);
+        setProducts(processedProducts);
       } catch (error) {
         console.error('Error fetching products:', error);
         toast.error('Failed to fetch products');
@@ -291,10 +320,14 @@ function Home() {
                 {/* Product Image */}
                 <div className="relative aspect-square mb-4 overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-700">
                   <img
-                    src={product.image}
+                    src={getImageUrl(product)}
                     alt={product.title}
                     className="w-full h-full object-cover transform transition-transform group-hover:scale-110"
                     loading="lazy"
+                    onError={(e) => {
+                      console.error(`Failed to load image for product: ${product.title}`);
+                      e.target.src = 'https://via.placeholder.com/300?text=Image+Not+Available';
+                    }}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 </div>
@@ -361,13 +394,17 @@ function Home() {
                   </div>
 
                   <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-700">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-col">
                       <span className="text-lg font-bold text-gray-900 dark:text-white">
                         {formatPrice(product.price)}
                       </span>
-                      {product.stock <= 5 && (
-                        <span className="text-xs font-medium text-red-500 dark:text-red-400 animate-pulse">
-                          Only {product.stock} left!
+                      {product.stock > 0 ? (
+                        <span className={`text-xs font-medium ${product.stock <= 5 ? 'text-amber-600 dark:text-amber-400' : 'text-green-600 dark:text-green-400'}`}>
+                          {product.stock <= 5 ? `Only ${product.stock} left!` : `${product.stock} in stock`}
+                        </span>
+                      ) : (
+                        <span className="text-xs font-medium text-red-600 dark:text-red-400">
+                          Out of stock
                         </span>
                       )}
                     </div>

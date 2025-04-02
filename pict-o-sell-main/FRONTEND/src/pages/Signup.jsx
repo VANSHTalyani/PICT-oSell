@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaEnvelope, FaLock, FaUserPlus, FaUser, FaGoogle } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
+import { showUniqueToast } from '../utils/toastManager';
 import toast from 'react-hot-toast';
 
 function Signup() {
@@ -22,31 +23,31 @@ function Signup() {
     // Validate form
     if (!name) {
       setError('Please enter your name');
-      toast.error('Please enter your name');
+      showUniqueToast('Please enter your name', 'error');
       return;
     }
     
     if (!email) {
       setError('Please enter your email');
-      toast.error('Please enter your email');
+      showUniqueToast('Please enter your email', 'error');
       return;
     }
     
     if (!password) {
       setError('Please enter a password');
-      toast.error('Please enter a password');
+      showUniqueToast('Please enter a password', 'error');
       return;
     }
     
     if (password !== confirmPassword) {
       setError('Passwords do not match');
-      toast.error('Passwords do not match');
+      showUniqueToast('Passwords do not match', 'error');
       return;
     }
     
     if (!termsAccepted) {
       setError('Please accept the terms and conditions');
-      toast.error('Please accept the terms and conditions');
+      showUniqueToast('Please accept the terms and conditions', 'error');
       return;
     }
     
@@ -55,19 +56,31 @@ function Signup() {
       setError('');
       
       await register({ name, email, password });
-      toast.success('Account created successfully!');
+      showUniqueToast('Account created successfully!', 'success');
       navigate('/');
     } catch (err) {
       // Check if the error is related to an existing email
       if (err.message && err.message.toLowerCase().includes('email already exists')) {
         setError('This email is already registered. Please use a different email or login to your existing account.');
-        toast.error('This email is already registered');
+        showUniqueToast('This email is already registered', 'error');
       } else {
         setError(err.message || 'Failed to create account');
-        toast.error(err.message || 'Failed to create account');
+        showUniqueToast(err.message || 'Failed to create account', 'error');
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = () => {
+    try {
+      setGoogleLoading(true);
+      // Redirect to Google OAuth endpoint
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      window.location.href = `${apiUrl}/api/auth/google`;
+    } catch (error) {
+      showUniqueToast('Failed to start Google login', 'error');
+      setGoogleLoading(false);
     }
   };
 
@@ -239,7 +252,7 @@ function Signup() {
                 
                 <button
                   type="button"
-                  onClick={() => window.location.href = `${import.meta.env.VITE_API_URL}/api/auth/google`}
+                  onClick={handleGoogleLogin}
                   disabled={googleLoading}
                   className="
                     mt-4 w-full flex justify-center py-3.5 px-5 

@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FaEnvelope, FaLock, FaSignInAlt, FaGoogle } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+import { showUniqueToast } from '../utils/toastManager';
 import toast from 'react-hot-toast';
 
 function Login() {
@@ -29,12 +30,12 @@ function Login() {
         const { action, product } = JSON.parse(pendingAction);
         if (action === 'addToCart' && product) {
           await addToCart(product);
-          toast.success('Added to cart successfully!');
+          showUniqueToast('Added to cart successfully!', 'success');
           navigate('/cart');
         }
       } catch (error) {
         console.error('Error handling pending cart action:', error);
-        toast.error('Failed to add item to cart');
+        showUniqueToast('Failed to add item to cart', 'error');
       } finally {
         localStorage.removeItem('pendingCartAction');
       }
@@ -49,17 +50,17 @@ function Login() {
     e.preventDefault();
     
     if (!email || !password) {
-      toast.error('Please enter both email and password');
+      showUniqueToast('Please fill in all fields', 'error');
       return;
     }
     
     try {
       setLoading(true);
       await login({ email, password });
-      toast.success('Logged in successfully!');
+      // Success toast is now handled in AuthContext
       // handlePendingCartAction is called by the useEffect when isAuthenticated changes
     } catch (err) {
-      toast.error(err.message || 'Invalid email or password');
+      showUniqueToast(err.message || 'Invalid email or password', 'error');
     } finally {
       setLoading(false);
     }
@@ -73,7 +74,7 @@ function Login() {
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
       window.location.href = `${apiUrl}/api/auth/google`;
     } catch (error) {
-      toast.error('Failed to start Google login');
+      showUniqueToast('Failed to start Google login', 'error');
       setGoogleLoading(false);
     }
   };

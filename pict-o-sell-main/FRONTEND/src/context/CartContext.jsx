@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import * as api from '../services/api';
 import { useAuth } from './AuthContext';
+import { showUniqueToast } from '../utils/toastManager';
 import toast from 'react-hot-toast';
 
 const CartContext = createContext();
@@ -33,19 +34,39 @@ export const CartProvider = ({ children }) => {
     try {
       setLoading(true);
       const { cartItems } = await api.getCart();
+      
+      // Debug: Log the raw cart items from API
+      console.log('Raw cart items from API:', JSON.stringify(cartItems, null, 2));
+      
       // Transform cart items to ensure consistent price access
-      const transformedItems = cartItems.map(item => ({
-        ...item,
-        price: item.Product ? item.Product.price : item.price,
-        name: item.Product ? item.Product.title : item.name,
-        image: item.Product ? item.Product.image_path : item.image,
-        category: item.Product ? item.Product.category : item.category
-      }));
+      const transformedItems = cartItems.map(item => {
+        // Debug: Log each item structure
+        console.log('Cart item structure:', JSON.stringify(item, null, 2));
+        
+        // Ensure proper image path formatting
+        let imagePath = item.Product ? item.Product.image : item.image;
+        
+        // Log the original image path for debugging
+        console.log('Original image path:', imagePath);
+        
+        // Make sure image path is properly formatted
+        if (imagePath && !imagePath.startsWith('http') && !imagePath.startsWith('/uploads')) {
+          imagePath = `/uploads/${imagePath}`;
+        }
+        
+        return {
+          ...item,
+          price: item.Product ? item.Product.price : item.price,
+          name: item.Product ? item.Product.title : item.name,
+          image: imagePath,
+          category: item.Product ? item.Product.category : item.category
+        };
+      });
       setCartItems(transformedItems);
     } catch (error) {
       console.error('Load cart error:', error);
       setError(error);
-      toast.error('Failed to load cart items');
+      showUniqueToast('Failed to load cart items', 'error');
     } finally {
       setLoading(false);
     }
@@ -56,11 +77,20 @@ export const CartProvider = ({ children }) => {
       setLoading(true);
       const { cartItem } = await api.addToCart(product.id, quantity);
       // Transform cart item to ensure consistent price access
+      
+      // Ensure proper image path formatting
+      let imagePath = cartItem.Product ? cartItem.Product.image : cartItem.image;
+      
+      // Make sure image path is properly formatted
+      if (imagePath && !imagePath.startsWith('http') && !imagePath.startsWith('/uploads')) {
+        imagePath = `/uploads/${imagePath}`;
+      }
+      
       const transformedItem = {
         ...cartItem,
         price: cartItem.Product ? cartItem.Product.price : cartItem.price,
         name: cartItem.Product ? cartItem.Product.title : cartItem.name,
-        image: cartItem.Product ? cartItem.Product.image_path : cartItem.image,
+        image: imagePath,
         category: cartItem.Product ? cartItem.Product.category : cartItem.category
       };
       setCartItems(prev => [...prev, transformedItem]);
@@ -79,11 +109,20 @@ export const CartProvider = ({ children }) => {
       setLoading(true);
       const { cartItem } = await api.updateCartQuantity(itemId, quantity);
       // Transform cart item to ensure consistent price access
+      
+      // Ensure proper image path formatting
+      let imagePath = cartItem.Product ? cartItem.Product.image : cartItem.image;
+      
+      // Make sure image path is properly formatted
+      if (imagePath && !imagePath.startsWith('http') && !imagePath.startsWith('/uploads')) {
+        imagePath = `/uploads/${imagePath}`;
+      }
+      
       const transformedItem = {
         ...cartItem,
         price: cartItem.Product ? cartItem.Product.price : cartItem.price,
         name: cartItem.Product ? cartItem.Product.title : cartItem.name,
-        image: cartItem.Product ? cartItem.Product.image_path : cartItem.image,
+        image: imagePath,
         category: cartItem.Product ? cartItem.Product.category : cartItem.category
       };
       setCartItems(prev => 
